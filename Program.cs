@@ -18,6 +18,7 @@ builder.Services.AddDbContext<FantasyDbContext>(options =>
 
 // Register services (DI)
 builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IGameStatService, GameStatService>();
 
 // Add Swagger for API testing
 builder.Services.AddEndpointsApiExplorer();
