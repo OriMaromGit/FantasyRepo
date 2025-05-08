@@ -10,7 +10,7 @@ namespace FantasyNBA.Models
         public int Id { get; set; }
 
         public int PlayerApiId { get; set; } // Balldontlie player ID
-        public DataSourceApi DataSourceApi { get; set; }         // e.g., "Balldontlie"
+        public DataSourceApi DataSourceApi { get; set; }  // e.g., "Balldontlie"
         
         public string FirstName { get; set; }
         public string LastName { get; set; }

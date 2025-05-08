@@ -1,6 +1,6 @@
 ﻿namespace FantasyNBA.Models.Config
 {
-    public class BalldontlieApiSettings
+    public class ApiProviderSettings
     {
         public string BaseUrl { get; set; } = string.Empty;
         public string ApiKey { get; set; } = string.Empty;

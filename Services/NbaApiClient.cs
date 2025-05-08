@@ -2,8 +2,6 @@
 using FantasyNBA.Models;
 using FantasyNBA.Models.Config;
 using Microsoft.Extensions.Options;
-using System.Net.Http.Json;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace FantasyNBA.Services
@@ -11,12 +9,12 @@ namespace FantasyNBA.Services
     public class NbaApiClient : INbaApiClient
     {
         private readonly HttpClient _http;
-        private readonly BalldontlieApiSettings _settings;
+        private readonly ApiProviderSettings _settings;
 
-        public NbaApiClient(HttpClient http, IOptions<BalldontlieApiSettings> settings)
+        public NbaApiClient(HttpClient http, IOptionsSnapshot<ApiProviderSettings> settingsSnapshot)
         {
             _http = http;
-            _settings = settings.Value;
+            _settings = settingsSnapshot.Get("Balldontlie"); // or dynamically select based on enum
 
             _http.BaseAddress = new Uri(_settings.BaseUrl);
             _http.DefaultRequestHeaders.Add("Authorization", _settings.ApiKey);
@@ -43,7 +41,10 @@ namespace FantasyNBA.Services
                 var json = await response.Content.ReadAsStringAsync();
                 var jsonNode = JsonNode.Parse(json);
 
-                if (jsonNode == null) break;
+                if (jsonNode == null)
+                { 
+                    break;
+                }
 
                 var items = parser.ParsePlayersResponse(jsonNode);
                 allItems.AddRange(items);

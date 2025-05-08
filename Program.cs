@@ -17,7 +17,7 @@ builder.Services.AddDbContext<FantasyDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register services
-builder.Services.Configure<BalldontlieApiSettings>(
+builder.Services.Configure<ApiProviderSettings>(
     builder.Configuration.GetSection("BalldontlieApi"));
 
 builder.Services.AddScoped<IPlayerService, PlayerService>();
