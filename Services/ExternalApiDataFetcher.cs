@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Text.RegularExpressions;
 
 namespace FantasyNBA.Services
 {
@@ -27,14 +28,16 @@ namespace FantasyNBA.Services
 
             do
             {
+                var cleanEndpoint = Regex.Replace(endpoint, @"&cursor=\d+", "", RegexOptions.Compiled);
+
                 if (!string.IsNullOrEmpty(cursor))
                 {
-                    endpoint += $"&cursor={cursor}";
+                    cleanEndpoint += $"&cursor={cursor}";
                 }
 
                 try
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+                    var request = new HttpRequestMessage(HttpMethod.Get, cleanEndpoint);
                     if (!string.IsNullOrWhiteSpace(apiKey))
                     {
                         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
@@ -65,7 +68,7 @@ namespace FantasyNBA.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to fetch data from {Url}", endpoint);
+                    _logger.LogError(ex, "Failed to fetch data from {Url}", cleanEndpoint);
                     break;
                 }
 
