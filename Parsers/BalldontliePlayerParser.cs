@@ -1,24 +1,53 @@
 ﻿using FantasyNBA.Enums;
 using FantasyNBA.Models;
+using Newtonsoft.Json.Linq;
 
-public class BalldontliePlayerParser : IApiParser<Player>
+public class BallDontLiePlayerParser : IApiParser<Player>
 {
-    private readonly int _pageSize;
-
-    public BalldontliePlayerParser(int pageSize)
+    
+    public BallDontLiePlayerParser()
     {
-        _pageSize = pageSize;
     }
 
-    public string BuildEndpoint(string cursor = null)
+    private static Player? ParsePlayer(dynamic item)
     {
-        var endpoint = $"players?per_page={_pageSize}";
-        
-        if (!string.IsNullOrEmpty(cursor))
+        try
         {
-            endpoint += $"&cursor={cursor}";
+            dynamic teamNode = item.team;
+
+            var team = new Team
+            {
+                TeamApiId = (int?)teamNode?.id ?? 0,
+                City = (string?)teamNode?.city ?? "",
+                Name = (string?)teamNode?.name ?? "",
+                Abbreviation = (string?)teamNode?.abbreviation ?? "",
+                FullName = (string?)teamNode?.full_name ?? "",
+                Conference = (string?)teamNode?.conference ?? "",
+                Division = (string?)teamNode?.division ?? ""
+            };
+
+            return new Player
+            {
+                DataSourceApi = DataSourceApi.BallDontLie,
+                PlayerApiId = (int?)item?.id ?? 0,
+                FirstName = (string?)item?.first_name ?? "",
+                LastName = (string?)item?.last_name ?? "",
+                Position = (string?)item?.position ?? "",
+                Height = (string?)item?.height ?? "",
+                Weight = (int?)item?.weight,
+                JerseyNumber = (string?)item?.jersey_number ?? "",
+                College = (string?)item?.college ?? "",
+                Country = (string?)item?.country ?? "",
+                DraftYear = (int?)item?.draft_year,
+                DraftRound = (int?)item?.draft_round,
+                DraftNumber = (int?)item?.draft_number,
+                Team = team
+            };
         }
-        return endpoint;
+        catch
+        {
+            return null;
+        }
     }
 
     public string? GetNextCursor(dynamic response)
@@ -37,36 +66,13 @@ public class BalldontliePlayerParser : IApiParser<Player>
     {
         var players = new List<Player>();
 
-        foreach (var item in response.data.EnumerateArray())
+        foreach (var item in response.data)
         {
-            players.Add(new Player
+            var player = ParsePlayer(item);
+            if (player != null)
             {
-                DataSourceApi = DataSourceApi.Balldontlie,
-                PlayerApiId = item["id"]!.GetValue<int>(),
-                FirstName = item["first_name"]?.GetValue<string>(),
-                LastName = item["last_name"]?.GetValue<string>(),
-                Position = item["position"]?.GetValue<string>(),
-                Height = item["height"]?.GetValue<string>(),
-                Weight = item["weight"]?.GetValue<int?>(),
-                JerseyNumber = item["jersey_number"]?.GetValue<string>(),
-                College = item["college"]?.GetValue<string>(),
-                Country = item["country"]?.GetValue<string>(),
-
-                DraftYear = item["draft_year"]?.GetValue<int?>(),
-                DraftRound = item["draft_round"]?.GetValue<int?>(),
-                DraftNumber = item["draft_number"]?.GetValue<int?>(),
-
-                Team = new Team
-                {
-                    Id = item["team"]?["id"]!.GetValue<int>() ?? 0,
-                    City = item["team"]?["city"]?.GetValue<string>(),
-                    Name = item["team"]?["name"]?.GetValue<string>(),
-                    Abbreviation = item["team"]?["abbreviation"]?.GetValue<string>(),
-                    FullName = item["team"]?["full_name"]?.GetValue<string>(),
-                    Conference = item["team"]?["conference"]?.GetValue<string>(),
-                    Division = item["team"]?["division"]?.GetValue<string>()
-                }
-            });
+                players.Add(player);
+            }
         }
 
         return players;

@@ -1,4 +1,5 @@
-﻿using FantasyNBA.Services;
+﻿using FantasyNBA.ApiClients;
+using FantasyNBA.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FantasyNBA.Controllers
@@ -7,9 +8,9 @@ namespace FantasyNBA.Controllers
     [Route("api/[controller]")]
     public class SyncController : ControllerBase
     {
-        private readonly PlayerSyncService _syncService;
+        private readonly SyncService _syncService;
 
-        public SyncController(PlayerSyncService syncService)
+        public SyncController(SyncService syncService)
         {
             _syncService = syncService;
         }

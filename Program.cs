@@ -1,8 +1,11 @@
+using FantasyNBA.ApiClients;
 using FantasyNBA.Data;
 using FantasyNBA.Interfaces;
+using FantasyNBA.Models;
 using FantasyNBA.Models.Config;
 using FantasyNBA.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,14 +19,32 @@ builder.Services.AddCors();
 builder.Services.AddDbContext<FantasyDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Register services
+// Register configuration settings
 builder.Services.Configure<ApiProviderSettings>(
     builder.Configuration.GetSection("BalldontlieApi"));
 
+// Register services
 builder.Services.AddScoped<IPlayerService, PlayerService>();
 builder.Services.AddScoped<IGameStatService, GameStatService>();
-builder.Services.AddHttpClient<INbaApiClient, NbaApiClient>();
-builder.Services.AddScoped<PlayerSyncService>();
+
+// Register HttpClient and fetcher
+builder.Services.AddHttpClient<IExternalApiDataFetcher, ExternalApiDataFetcher>();
+
+// Register parser
+builder.Services.AddScoped<IApiParser<Player>, BallDontLiePlayerParser>();
+
+// Register NBA API client with page size manually provided
+builder.Services.AddScoped<INbaApiClient>(sp =>
+{
+    var fetcher = sp.GetRequiredService<IExternalApiDataFetcher>();
+    var parser = sp.GetRequiredService<IApiParser<Player>>();
+    var settings = sp.GetRequiredService<IOptions<ApiProviderSettings>>();
+    int pageSize = settings.Value.PageSize;
+
+    return new BallDontLieApiClient(fetcher, parser, settings, pageSize);
+});
+
+builder.Services.AddScoped<SyncService>();
 
 // Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -39,8 +60,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors(); // allow API to be called from Angular
+app.UseCors();
 app.UseAuthorization();
-
 app.MapControllers();
 app.Run();
