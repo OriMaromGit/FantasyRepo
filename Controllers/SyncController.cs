@@ -21,5 +21,12 @@ namespace FantasyNBA.Controllers
             var added = await _syncService.SyncPlayersAsync();
             return Ok($"{added} new players added.");
         }
+
+        [HttpPost("teams")]
+        public async Task<IActionResult> SyncTeam()
+        {
+            var result = await _syncService.SyncTeamsAsync();
+            return Ok($"{result.Added} new teams added.");
+        }
     }
 }

@@ -1,8 +1,9 @@
 ﻿using FantasyNBA.Enums;
 using FantasyNBA.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-public class BallDontLiePlayerParser : IApiParser<Player>
+public class BallDontLiePlayerParser : IApiParser
 {
     
     public BallDontLiePlayerParser()
@@ -17,13 +18,16 @@ public class BallDontLiePlayerParser : IApiParser<Player>
 
             var team = new Team
             {
-                TeamApiId = (int?)teamNode?.id ?? 0,
                 City = (string?)teamNode?.city ?? "",
                 Name = (string?)teamNode?.name ?? "",
                 Abbreviation = (string?)teamNode?.abbreviation ?? "",
                 FullName = (string?)teamNode?.full_name ?? "",
                 Conference = (string?)teamNode?.conference ?? "",
-                Division = (string?)teamNode?.division ?? ""
+                Division = (string?)teamNode?.division ?? "",
+                ExternalApiDataJson = JsonConvert.SerializeObject(new
+                {
+                    BallDontLie = (int?)teamNode?.id ?? 0
+                })
             };
 
             return new Player
@@ -77,4 +81,40 @@ public class BallDontLiePlayerParser : IApiParser<Player>
 
         return players;
     }
+
+    public IEnumerable<Team> ParseTeamsResponse(dynamic response)
+    {
+        var teams = new List<Team>();
+
+        foreach (var item in response.data)
+        {
+            try
+            {
+                var team = new Team
+                {
+                    City = (string?)item?.city ?? "",
+                    Name = (string?)item?.name ?? "",
+                    FullName = (string?)item?.full_name ?? "",
+                    Abbreviation = (string?)item?.abbreviation ?? "",
+                    Conference = (string?)item?.conference ?? "",
+                    Division = (string?)item?.division ?? "",
+                    Nickname = null, // Not provided in BallDontLie response
+                    LogoUrl = null, // Not provided in BallDontLie response
+                    ExternalApiDataJson = JsonConvert.SerializeObject(new
+                    {
+                        BallDontLie = (int?)item?.id ?? 0
+                    })
+                };
+
+                teams.Add(team);
+            }
+            catch
+            {
+                // Optional: log parse error for this item
+            }
+        }
+
+        return teams;
+    }
+
 }

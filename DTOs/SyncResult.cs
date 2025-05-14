@@ -1,6 +1,6 @@
 ﻿namespace FantasyNBA.DTOs
 {
-    public class PlayerSyncResult
+    public class SyncResult
     {
         public int Added { get; set; }
         public int Updated { get; set; }

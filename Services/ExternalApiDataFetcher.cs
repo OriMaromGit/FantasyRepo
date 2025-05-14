@@ -18,10 +18,7 @@ namespace FantasyNBA.Services
             _logger = logger;
         }
 
-        public async Task<List<dynamic>> FetchPlayersDataAsync(
-            string endpoint,
-            string apiKey,
-            Func<dynamic, string?> getNextCursor)
+        public async Task<List<dynamic>> FetchDataAsync(string endpoint, string apiKey, Func<dynamic, string?> getNextCursor, Dictionary<string, string>? headers = null)
         {
             var results = new List<dynamic>();
             string? cursor = null;
@@ -41,6 +38,13 @@ namespace FantasyNBA.Services
                     if (!string.IsNullOrWhiteSpace(apiKey))
                     {
                         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+                    }
+                    if (headers != null)
+                    {
+                        foreach (var header in headers)
+                        {
+                            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                        }
                     }
 
                     var response = await _http.SendAsync(request);

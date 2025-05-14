@@ -3,6 +3,7 @@ using FantasyNBA.Data;
 using FantasyNBA.Interfaces;
 using FantasyNBA.Models;
 using FantasyNBA.Models.Config;
+using FantasyNBA.Parsers;
 using FantasyNBA.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -20,8 +21,8 @@ builder.Services.AddDbContext<FantasyDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register configuration settings
-builder.Services.Configure<ApiProviderSettings>(
-    builder.Configuration.GetSection("BalldontlieApi"));
+builder.Services.Configure<ApiProviderSettings>("BalldontlieApi", builder.Configuration.GetSection("BalldontlieApi"));
+builder.Services.Configure<ApiProviderSettings>("NBA_API", builder.Configuration.GetSection("NBA_API"));
 
 // Register services
 builder.Services.AddScoped<IPlayerService, PlayerService>();
@@ -31,17 +32,26 @@ builder.Services.AddScoped<IGameStatService, GameStatService>();
 builder.Services.AddHttpClient<IExternalApiDataFetcher, ExternalApiDataFetcher>();
 
 // Register parser
-builder.Services.AddScoped<IApiParser<Player>, BallDontLiePlayerParser>();
+builder.Services.AddScoped<IApiParser, BallDontLiePlayerParser>();
+builder.Services.AddScoped<IApiParser, NBA_APIParser>();
 
-// Register NBA API client with page size manually provided
-builder.Services.AddScoped<INbaApiClient>(sp =>
+// Register API clients
+builder.Services.AddScoped<INbaApiClient, BallDontLieApiClient>(sp =>
 {
     var fetcher = sp.GetRequiredService<IExternalApiDataFetcher>();
-    var parser = sp.GetRequiredService<IApiParser<Player>>();
-    var settings = sp.GetRequiredService<IOptions<ApiProviderSettings>>();
-    int pageSize = settings.Value.PageSize;
+    var parser = sp.GetServices<IApiParser>().OfType<BallDontLiePlayerParser>().First();
+    var optionsMonitor = sp.GetRequiredService<IOptionsMonitor<ApiProviderSettings>>();
+    var settings = optionsMonitor.Get("BalldontlieApi");
+    return new BallDontLieApiClient(fetcher, parser, Options.Create(settings), settings.PageSize);
+});
 
-    return new BallDontLieApiClient(fetcher, parser, settings, pageSize);
+builder.Services.AddScoped<INbaApiClient, NbaApiClient>(sp =>
+{
+    var fetcher = sp.GetRequiredService<IExternalApiDataFetcher>();
+    var parser = sp.GetServices<IApiParser>().OfType<NBA_APIParser>().First();
+    var optionsMonitor = sp.GetRequiredService<IOptionsMonitor<ApiProviderSettings>>();
+    var settings = optionsMonitor.Get("NBA_API");
+    return new NbaApiClient(fetcher, parser, Options.Create(settings), settings.PageSize);
 });
 
 builder.Services.AddScoped<SyncService>();

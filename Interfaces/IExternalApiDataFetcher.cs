@@ -4,6 +4,6 @@ namespace FantasyNBA.Interfaces
 {
     public interface IExternalApiDataFetcher
     {
-        Task<List<dynamic>> FetchPlayersDataAsync(string baseUrl, string apiKey, Func<dynamic, string?> getNextCursor);
+        Task<List<dynamic>> FetchDataAsync(string endpoint, string apiKey, Func<dynamic, string?> getNextCursor, Dictionary<string, string>? headers = null);
     }
 }

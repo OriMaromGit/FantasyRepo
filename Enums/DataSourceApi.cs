@@ -2,6 +2,7 @@
 {
     public enum DataSourceApi
     {
-        BallDontLie
+        BallDontLie,
+        NbaApi
     }
 }

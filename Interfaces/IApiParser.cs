@@ -1,5 +1,10 @@
-﻿public interface IApiParser<T>
+﻿using FantasyNBA.Models;
+
+public interface IApiParser
 {
-    IEnumerable<T> ParsePlayersResponse(dynamic response);
+    IEnumerable<Player> ParsePlayersResponse(dynamic response);
+
+    IEnumerable<Team> ParseTeamsResponse(dynamic response);
+
     string? GetNextCursor(dynamic response);
 }

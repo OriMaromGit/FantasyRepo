@@ -11,22 +11,12 @@ namespace FantasyNBA.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Store enum as string in DB
             modelBuilder.Entity<Player>()
                 .Property(p => p.DataSourceApi)
                 .HasConversion<string>();
 
-            modelBuilder.Entity<Team>()
-                .Property(t => t.DataSourceApi)
-                .HasConversion<string>();
-
-            // Optional: enforce ExternalId uniqueness per API
             modelBuilder.Entity<Player>()
                 .HasIndex(p => new { p.PlayerApiId, p.DataSourceApi })
-                .IsUnique();
-
-            modelBuilder.Entity<Team>()
-                .HasIndex(t => new { t.TeamApiId, t.DataSourceApi })
                 .IsUnique();
         }
 
