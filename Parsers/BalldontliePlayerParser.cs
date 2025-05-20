@@ -30,10 +30,14 @@ public class BallDontLiePlayerParser : IApiParser
                 })
             };
 
+            var externalIds = new Dictionary<string, int>
+            {
+                [DataSourceApi.BallDontLie.ToString()] = (int?)item?.id ?? 0
+            };
+
             return new Player
             {
                 DataSourceApi = DataSourceApi.BallDontLie,
-                PlayerApiId = (int?)item?.id ?? 0,
                 FirstName = (string?)item?.first_name ?? "",
                 LastName = (string?)item?.last_name ?? "",
                 Position = (string?)item?.position ?? "",
@@ -45,7 +49,8 @@ public class BallDontLiePlayerParser : IApiParser
                 DraftYear = (int?)item?.draft_year,
                 DraftRound = (int?)item?.draft_round,
                 DraftNumber = (int?)item?.draft_number,
-                Team = team
+                Team = team,
+                ExternalApiDataJson = JsonConvert.SerializeObject(externalIds)
             };
         }
         catch
@@ -82,6 +87,11 @@ public class BallDontLiePlayerParser : IApiParser
         return players;
     }
 
+    public IEnumerable<Player> ParsePlayersResponse(dynamic response, int teamId, int season)
+    {
+        throw new NotImplementedException();
+    }
+
     public IEnumerable<Team> ParseTeamsResponse(dynamic response)
     {
         var teams = new List<Team>();
@@ -100,9 +110,14 @@ public class BallDontLiePlayerParser : IApiParser
                     Division = (string?)item?.division ?? "",
                     Nickname = null, // Not provided in BallDontLie response
                     LogoUrl = null, // Not provided in BallDontLie response
-                    ExternalApiDataJson = JsonConvert.SerializeObject(new
+                    ExternalApiDataJson = JsonConvert.SerializeObject(new Dictionary<string, object>
                     {
-                        BallDontLie = (int?)item?.id ?? 0
+                        {
+                            DataSourceApi.BallDontLie.ToString(), new Dictionary<string, int>
+                            {
+                                { "id", (int?)item?.id ?? 0 }
+                            }
+                        }
                     })
                 };
 

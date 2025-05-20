@@ -18,7 +18,7 @@ namespace FantasyNBA.Services
             _logger = logger;
         }
 
-        public async Task<List<dynamic>> FetchDataAsync(string endpoint, string apiKey, Func<dynamic, string?> getNextCursor, Dictionary<string, string>? headers = null)
+        public async Task<List<dynamic>> FetchDataAsync(string endpoint, string apiKey, Func<dynamic, string?>? getNextCursor = null, Dictionary<string, string>? headers = null)
         {
             var results = new List<dynamic>();
             string? cursor = null;
@@ -65,10 +65,10 @@ namespace FantasyNBA.Services
                     if (json == null) break;
 
                     results.Add(json);
-                    cursor = getNextCursor(json);
+                    cursor = getNextCursor != null ? getNextCursor(json) : null;
 
                     // Conservative delay to reduce chance of rate limiting
-                    await Task.Delay(500);
+                    await Task.Delay(TimeSpan.FromSeconds(6));
                 }
                 catch (Exception ex)
                 {
@@ -77,6 +77,37 @@ namespace FantasyNBA.Services
                 }
 
             } while (!string.IsNullOrEmpty(cursor));
+
+            return results;
+        }
+
+        public async Task<List<T>> FetchMultipleTeamSeasonPagesAsync<T>(IEnumerable<int> teamIds, IEnumerable<int> seasons, Func<int, int, string> endpointBuilder,
+            string apiKey, Func<dynamic, string?>? getNextCursor = null, Dictionary<string, string>? headers = null, Func<dynamic, int, int, IEnumerable<T>> parsePage = null)
+        {
+            var results = new List<T>();
+
+            var teamSeasonPairs = from season in seasons
+                                  from teamId in teamIds
+                                  select (teamId, season);
+
+            foreach (var (teamId, season) in teamSeasonPairs)
+            {
+                var endpoint = endpointBuilder(teamId, season);
+                _logger.LogInformation("Fetching players for Team ID {TeamId}, Season {Season}...", teamId, season);
+
+                var pages = await FetchDataAsync(endpoint, apiKey, getNextCursor, headers);
+
+                if (parsePage == null)
+                {
+                    _logger.LogWarning("Parse function is null. Skipping Team ID {TeamId}, Season {Season}.", teamId, season);
+                    continue;
+                }
+
+                var parsedPlayers = pages.SelectMany<dynamic, T>(page => parsePage(page, teamId, season)).ToList();
+                _logger.LogInformation("Fetched {Count} players for Team ID {TeamId}, Season {Season}.", parsedPlayers.Count, teamId, season);
+
+                results.AddRange(parsedPlayers);
+            }
 
             return results;
         }

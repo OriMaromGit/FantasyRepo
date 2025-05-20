@@ -7,12 +7,6 @@ namespace FantasyNBA.Parsers
 {
     public class NBA_APIParser : IApiParser
     {
-        public IEnumerable<Team> ParsePlayersResponse(dynamic response)
-        {
-            // This parser does not handle players
-            return Enumerable.Empty<Team>();
-        }
-
         public IEnumerable<Team> ParseTeamsResponse(dynamic response)
         {
             var teams = new List<Team>();
@@ -33,15 +27,20 @@ namespace FantasyNBA.Parsers
                         Division = standardLeague?.division ?? string.Empty,
                         LogoUrl = item.logo ?? string.Empty,
                         Nickname = item.nickname ?? string.Empty,
-                        ExternalApiDataJson = JsonConvert.SerializeObject(new
+                        ExternalApiDataJson = JsonConvert.SerializeObject(new Dictionary<string, object>
                         {
-                            NBA_API_Id = item.id ?? 0
+                            {
+                                DataSourceApi.NbaApi.ToString(), new Dictionary<string, object>
+                                {
+                                    { "id", item.id ?? 0 }
+                                }
+                            }
                         })
                     };
 
                     teams.Add(team);
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Handle parsing errors if needed
                 }
@@ -56,9 +55,60 @@ namespace FantasyNBA.Parsers
             return null;
         }
 
-        IEnumerable<Player> IApiParser.ParsePlayersResponse(dynamic response)
+        public IEnumerable<Player> ParsePlayersResponse(dynamic response, int teamId, int season)
         {
-            throw new NotImplementedException();
+            var results = new List<Player>();
+
+            if (response == null || response.response == null)
+                return results;
+
+            foreach (var item in response.response)
+            {
+                bool isActive = (bool?)item?.leagues?.standard?.active ?? false;
+                if (!isActive)
+                    continue;
+
+                try
+                {
+                    var player = new Player
+                    {
+                        FirstName = (string?)item.firstname ?? string.Empty,
+                        LastName = (string?)item.lastname ?? string.Empty,
+                        Position = (string?)item.leagues?.standard?.pos ?? string.Empty,
+                        Height = (string?)item.height?.meters ?? string.Empty,
+                        Weight = double.TryParse((string?)item.weight?.kilograms, out var w) ? (int?)Math.Round(w) : null,
+                        JerseyNumber = item.leagues?.standard?.jersey?.ToString() ?? string.Empty,
+                        College = (string?)item.college ?? string.Empty,
+                        Country = (string?)item.birth?.country ?? string.Empty,
+                        DraftYear = null,
+                        DraftRound = null,
+                        DraftNumber = null,
+                        TeamId = teamId,
+                        IsActive = true,
+                        NbaStartYear = (int?)item.nba?.start,
+                        DataSourceApi = DataSourceApi.NbaApi,
+                        ExternalApiDataJson = JsonConvert.SerializeObject(new Dictionary<string, object>
+                        {
+                            {
+                                DataSourceApi.NbaApi.ToString(), // This becomes "NbaApi"
+                                new Dictionary<string, int>
+                                {
+                                    { "id", (int)item.id }
+                                }
+                            }
+                        })
+                    };
+
+                    results.Add(player);
+                }
+                catch
+                {
+                    // log or handle bad item if needed
+                }
+            }
+
+            return results;
         }
+
     }
 }

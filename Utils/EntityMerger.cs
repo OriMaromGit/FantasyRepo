@@ -63,23 +63,24 @@ namespace FantasyNBA.Utils
         private static Team MergeTeamGroup(List<Team> group)
         {
             var baseTeam = group.First();
-            var externalIds = new Dictionary<string, int>();
+            var externalDataList = new List<Dictionary<string, object>>();
 
             foreach (var team in group)
             {
-                // Merge ExternalApiDataJson
-                if (!string.IsNullOrEmpty(team.ExternalApiDataJson))
+                if (string.IsNullOrEmpty(team.ExternalApiDataJson)) continue;
+
+                var parsedJson = JsonConvert.DeserializeObject<Dictionary<string, object>>(team.ExternalApiDataJson);
+                if (parsedJson != null)
                 {
-                    var parsed = JsonConvert.DeserializeObject<Dictionary<string, int>>(team.ExternalApiDataJson);
-                    foreach (var kvp in parsed)
-                    {
-                        externalIds[kvp.Key] = kvp.Value;
-                    }
+                    externalDataList.Add(parsedJson);
                 }
             }
 
+            var mergedExternalData = Utils.MergeDictionaries(externalDataList);
+
             FillMissingTeamFields(baseTeam, group);
-            baseTeam.ExternalApiDataJson = JsonConvert.SerializeObject(externalIds);
+            baseTeam.ExternalApiDataJson = JsonConvert.SerializeObject(mergedExternalData);
+
             return baseTeam;
         }
     }

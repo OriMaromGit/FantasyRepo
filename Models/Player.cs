@@ -9,8 +9,8 @@ namespace FantasyNBA.Models
         [Key]
         public int Id { get; set; }
 
-        public int PlayerApiId { get; set; } // Balldontlie player ID
         public DataSourceApi DataSourceApi { get; set; }  // e.g., "Balldontlie"
+        public string? ExternalApiDataJson { get; set; }
         
         public string FirstName { get; set; }
         public string LastName { get; set; }
@@ -28,6 +28,8 @@ namespace FantasyNBA.Models
         public int? DraftYear { get; set; }
         public int? DraftRound { get; set; }
         public int? DraftNumber { get; set; }
+        public int? NbaStartYear { get; set; }
+        public bool IsActive { get; set; }             // Needed to store active status from RapidAPI
 
         // Foreign key and navigation
         public int TeamId { get; set; }

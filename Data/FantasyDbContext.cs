@@ -14,14 +14,11 @@ namespace FantasyNBA.Data
             modelBuilder.Entity<Player>()
                 .Property(p => p.DataSourceApi)
                 .HasConversion<string>();
-
-            modelBuilder.Entity<Player>()
-                .HasIndex(p => new { p.PlayerApiId, p.DataSourceApi })
-                .IsUnique();
         }
 
         public DbSet<Player> Players { get; set; }
         public DbSet<GameStat> GameStats { get; set; }
         public DbSet<Team> Teams { get; set; }
+        public DbSet<LogEntry> LogEntries { get; set; }
     }
 }
