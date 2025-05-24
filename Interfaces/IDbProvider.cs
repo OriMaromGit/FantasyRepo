@@ -10,5 +10,8 @@ namespace FantasyNBA.Interfaces
         Task AddLogEntryAsync(LogEntry entry);
         Task AddLogEntryAsync(string category, string message, string? context = null);
         Task<List<Player>> GetPlayersByExternalIdsAsync(IEnumerable<string> externalIds, DataSourceApi source);
+        Task AddPlayersAsync(List<Player> newPlayers);
+        Task UpdatePlayersAsync(List<Player> updatedPlayers);
+        Task SavePlayersAsync(List<Player> newPlayers, List<Player> updatedPlayers); 
     }
 }

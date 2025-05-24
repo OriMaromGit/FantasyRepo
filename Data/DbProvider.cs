@@ -70,5 +70,33 @@ namespace FantasyNBA.Data
 
             return matchedPlayers;
         }
+
+        public async Task AddPlayersAsync(List<Player> newPlayers)
+        {
+            if (newPlayers.Any())
+            {
+                await _context.Players.AddRangeAsync(newPlayers);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task UpdatePlayersAsync(List<Player> updatedPlayers)
+        {
+            if (updatedPlayers.Any())
+            {
+                _context.Players.UpdateRange(updatedPlayers);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        // Optional combo method
+        public async Task SavePlayersAsync(List<Player> newPlayers, List<Player> updatedPlayers)
+        {
+            if (newPlayers.Any())
+                await AddPlayersAsync(newPlayers);
+
+            if (updatedPlayers.Any())
+                await UpdatePlayersAsync(updatedPlayers);
+        }
     }
 }

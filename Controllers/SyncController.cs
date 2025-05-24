@@ -18,8 +18,8 @@ namespace FantasyNBA.Controllers
         [HttpPost("players")]
         public async Task<IActionResult> SyncPlayers()
         {
-            var added = await _syncService.SyncPlayersAsync();
-            return Ok($"{added} new players added.");
+            var result = await _syncService.SyncPlayersAsync();
+            return Ok($"{result.Added} new players added; {result.Updated} players updated; {result.Deleted} players deleted.");
         }
 
         [HttpPost("teams")]

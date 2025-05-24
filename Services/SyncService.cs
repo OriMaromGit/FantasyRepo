@@ -6,9 +6,7 @@ using FantasyNBA.Interfaces;
 using FantasyNBA.Models;
 using FantasyNBA.Utils;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Text.Json;
 
 namespace FantasyNBA.Services
 {
@@ -36,25 +34,6 @@ namespace FantasyNBA.Services
 
         #region Private Methods
 
-        private bool PlayerEquals(Player a, Player b)
-        {
-            return JsonConvert.SerializeObject(a) == JsonConvert.SerializeObject(b);
-        }
-
-        private async Task<bool> ShouldSkipPlayerAsync(Player player, HashSet<int> seenExternalIds)
-        {
-            if (player.TeamId == 0)
-                return true;
-
-            var externalId = await ParserUtils.ExtractApiIdAsync(player.ExternalApiDataJson, DataSourceApi.NbaApi, _dbGenericLogger);
-            if (externalId == null)
-            {
-                return true;
-            }
-
-            return !seenExternalIds.Add(externalId.Value); // if already seen, skip
-        }
-
         private void AssignTeamIfPossible(Player player, Dictionary<DataSourceApi, Dictionary<int, Team>> teamLookup, DataSourceApi source)
         {
             if (teamLookup.TryGetValue(source, out var teamMap) &&
@@ -71,7 +50,7 @@ namespace FantasyNBA.Services
             }
         }
 
-        private List<(DataSourceApi Source, int ExternalId)> ExtractAllApiIds(Player player)
+        private List<(DataSourceApi Source, int ExternalId)> ExtractPlayerExternalIds(Player player)
         {
             var ids = new List<(DataSourceApi, int)>();
 
@@ -94,51 +73,66 @@ namespace FantasyNBA.Services
             return ids;
         }
 
-        private List<Player> FilterNewOrChangedPlayers(Dictionary<int, Player> newPlayersById, Dictionary<int, Player> existingPlayersById, Dictionary<DataSourceApi, Dictionary<int, Team>> teamLookup,
-            DataSourceApi source, bool filterByIdOnly)
+        private (List<Player> NewPlayers, List<Player> UpdatedPlayers) FilterNewOrChangedPlayers(Dictionary<int, Player> newPlayersById, Dictionary<int, Player> existingPlayersById,
+            Dictionary<DataSourceApi, Dictionary<int, Team>> teamLookup, DataSourceApi source, bool filterByIdOnly)
         {
-            var playersToSync = new List<Player>();
+            var newPlayers = new List<Player>();
+            var updatedPlayers = new List<Player>();
 
             foreach (var (externalId, newPlayer) in newPlayersById)
             {
-                var isExisting = existingPlayersById.TryGetValue(externalId, out var existing);
-
-                if (filterByIdOnly && isExisting)
+                if (existingPlayersById.TryGetValue(externalId, out var existing))
                 {
-                    _logger.LogInformation("Player {Id} exists in DB (filtered by ID-only), skipping.", externalId);
+                    if (filterByIdOnly)
+                    {
+                        _logger.LogInformation("Player {Id} exists in DB (filtered by ID-only), skipping.", externalId);
+                        continue;
+                    }
+
+                    if (existing.ApplyUpdatesIfChanged(newPlayer))
+                    {
+                        AssignTeamIfPossible(existing, teamLookup, source);
+                        updatedPlayers.Add(existing);
+                        _logger.LogInformation("Player {Id} from {Source} changed → marked for update.", externalId, source);
+                    }
+
+                    continue; // either updated or unchanged, no need to add to newPlayers
+                }
+
+                AssignTeamIfPossible(newPlayer, teamLookup, source);
+                newPlayers.Add(newPlayer);
+                _logger.LogInformation("Player {Id} from {Source} is new → marked for insert.", externalId, source);
+            }
+
+            return (newPlayers, updatedPlayers);
+        }
+
+        private Dictionary<int, Player> GetRelevantPlayerIdsFromApi(Player player, DataSourceApi source, HashSet<(DataSourceApi, int)> seenPlayers)
+        {
+            var result = new Dictionary<int, Player>();
+            var ids = ExtractPlayerExternalIds(player); // Get all (Api, ExternalId) tuples for requested player
+
+            foreach (var (api, externalId) in ids)
+            {
+                var playerIdPerClient = (api, externalId);
+
+                // Skip if Source exists and the Id of the player is the same
+                if (!seenPlayers.Add(playerIdPerClient))
+                {
                     continue;
                 }
 
-                if (isExisting)
+                // Add Id only if from the current API source
+                if (api == source)
                 {
-                    var wasUpdated = existing.ApplyUpdatesIfChanged(newPlayer);
-
-                    if (wasUpdated)
-                    {
-                        AssignTeamIfPossible(existing, teamLookup, source);
-                        playersToSync.Add(existing); // updated version
-                        _logger.LogInformation("Player {Id} from {Source} changed → marked for update.", externalId, source);
-                    }
-                    else
-                    {
-                        _logger.LogInformation("Player {Id} from {Source} unchanged, skipping.", externalId, source);
-                    }
-                }
-                else
-                {
-                    // New player → assign team and insert
-                    AssignTeamIfPossible(newPlayer, teamLookup, source);
-                    playersToSync.Add(newPlayer);
-                    _logger.LogInformation("Player {Id} from {Source} is new → marked for insert.", externalId, source);
+                    result[externalId] = player;
                 }
             }
 
-            return playersToSync;
+            return result;
         }
 
-
-
-        private async Task<List<Player>> GetNewOrUpdatedPlayersAsync( INbaApiClient client, Dictionary<DataSourceApi, Dictionary<int, Team>> teamLookup, bool filterByIdOnly = true)
+        private async Task<(List<Player> NewPlayers, List<Player> UpdatedPlayers)> GetNewOrUpdatedPlayersAsync(INbaApiClient client, Dictionary<DataSourceApi, Dictionary<int, Team>> teamLookup, bool filterByIdOnly = true)
         {
             var source = client.DataSourceApi;
             var filteredPlayers = new List<Player>();
@@ -148,31 +142,22 @@ namespace FantasyNBA.Services
             var players = await client.FetchPlayersDataAsync();
             _logger.LogInformation("Fetched total of {Count} players from {Source} API", players.Count, source);
 
-            // STEP 1: Process each player from the API
+            // STEP 1: Get Players by client IDs
             foreach (var player in players)
             {
-                var ids = ExtractAllApiIds(player); // sync version
-
-                foreach (var (api, externalId) in ids)
+                var playerIdsFromSource = GetRelevantPlayerIdsFromApi(player, source, seenPlayers);
+                foreach (var kvp in playerIdsFromSource)
                 {
-                    // Skip if we've already seen this (Api, Id) combo
-                    var dedupKey = (api, externalId);
-                    if (!seenPlayers.Add(dedupKey))
-
-                    // Only keep players from the current source
-                    if (api == source)
-                    {
-                        relevantPlayersById[externalId] = player;
-                    }
+                    relevantPlayersById[kvp.Key] = kvp.Value;
                 }
             }
 
             // Step 2: Fetch existing players by external IDs from DB
-            var externalIds = relevantPlayersById.Keys.Select(id => id.ToString()).ToList();
-            var existingPlayers = await _dbProvider.GetPlayersByExternalIdsAsync(externalIds, source);
+            var externalPlayersIds = relevantPlayersById.Keys.Select(id => id.ToString()).ToList();
+            var existingDbPlayers = await _dbProvider.GetPlayersByExternalIdsAsync(externalPlayersIds, source);
 
             var existingMap = new Dictionary<int, Player>();
-            foreach (var existing in existingPlayers)
+            foreach (var existing in existingDbPlayers)
             {
                 // Map external Ids to a dictionary
                 var existingId = await ParserUtils.ExtractApiIdAsync(existing.ExternalApiDataJson, source, _dbGenericLogger);
@@ -183,12 +168,12 @@ namespace FantasyNBA.Services
             }
 
             // Step 3: Compare and keep only new or updated players
-            var playersToSync = FilterNewOrChangedPlayers(relevantPlayersById, existingMap, teamLookup, source, filterByIdOnly);
-            _logger.LogInformation("Filtered {Count} new/updated players from {Source} API", playersToSync.Count, source);
+            var (newPlayers, updatedPlayers) = FilterNewOrChangedPlayers(relevantPlayersById, existingMap, teamLookup, source, filterByIdOnly);
+            _logger.LogInformation("Filtered {NewCount} new and {UpdatedCount} updated players from {Source} API",
+                newPlayers.Count, updatedPlayers.Count, source);
 
-            return playersToSync;
+            return (newPlayers, updatedPlayers);
         }
-
 
         private async Task<List<Team>> FetchAndMergeTeamsFromProvidersAsync()
         {
@@ -215,7 +200,8 @@ namespace FantasyNBA.Services
         public async Task<SyncResult> SyncPlayersAsync()
         {
             var result = new SyncResult();
-            var allPlayers = new List<Player>();
+            var allNewPlayers = new List<Player>();
+            var allUpdatedPlayers = new List<Player>();
 
             var teams = await _dbProvider.GetAllTeamsAsync();
             var teamLookup = ParserUtils.BuildTeamLookup(teams);
@@ -228,22 +214,19 @@ namespace FantasyNBA.Services
                     continue;
                 }
 
-                var players = await GetNewOrUpdatedPlayersAsync(client, teamLookup);
-                allPlayers.AddRange(players);
+                var (newPlayers, updatedPlayers) = await GetNewOrUpdatedPlayersAsync(client, teamLookup, false);
+                allNewPlayers.AddRange(newPlayers);
+                allUpdatedPlayers.AddRange(updatedPlayers);
             }
 
-            var duplicatesInBatch = allPlayers
-                .GroupBy(p => new { p.Id, p.DataSourceApi })
-                .Where(g => g.Count() > 1)
-                .ToList();
+            var duplicatesInBatch = allNewPlayers.Concat(allUpdatedPlayers).GroupBy(p => new { p.Id, p.DataSourceApi })
+                .Where(g => g.Count() > 1).ToList();
 
-            if (allPlayers.Any())
-            {
-                await _context.Players.AddRangeAsync(allPlayers);
-                await _context.SaveChangesAsync();
-            }
+            await _dbProvider.SavePlayersAsync(allNewPlayers, allUpdatedPlayers);
 
-            result.Added = allPlayers.Count;
+            result.Added = allNewPlayers.Count;
+            result.Updated = allUpdatedPlayers.Count;
+
             return result;
         }
 

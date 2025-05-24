@@ -28,6 +28,7 @@
             UpdateIfDifferent(p => p.TeamId, (p, v) => p.TeamId = v);
             UpdateIfDifferent(p => p.IsActive, (p, v) => p.IsActive = v);
             UpdateIfDifferent(p => p.NbaStartYear, (p, v) => p.NbaStartYear = v);
+            UpdateIfDifferent(p => p.JerseyNumber, (p, v) => p.JerseyNumber = v);
             UpdateIfDifferent(p => p.ExternalApiDataJson, (p, v) => p.ExternalApiDataJson = v);
 
             return changed;
