@@ -16,7 +16,7 @@ namespace FantasyNBA.Data
             _context = context;
         }
 
-        public async Task<List<Team>> GetAllTeamsAsync()
+        public async Task<List<Team>> GetTeamsAsync()
         {
             return await _context.Teams.ToListAsync();
         }
@@ -97,6 +97,34 @@ namespace FantasyNBA.Data
 
             if (updatedPlayers.Any())
                 await UpdatePlayersAsync(updatedPlayers);
+        }
+
+        public async Task AddPlayerTeamHistoryIfNewAsync(int playerId, int teamId, int season)
+        {
+            var exists = await _context.PlayerTeamHistories.AnyAsync(h =>
+                h.PlayerId == playerId && h.TeamId == teamId && h.Season == season);
+
+            if (!exists)
+            {
+                _context.PlayerTeamHistories.Add(new PlayerTeamHistory
+                {
+                    PlayerId = playerId,
+                    TeamId = teamId,
+                    Season = season,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<List<Player>> GetPlayersByTeamAndSeasonAsync(int teamId, int season)
+        {
+            return await _context.PlayerTeamHistories
+                .Where(h => h.TeamId == teamId && h.Season == season)
+                .Select(h => h.Player)
+                .Include(p => p.ActiveTeam)
+                .ToListAsync();
         }
     }
 }

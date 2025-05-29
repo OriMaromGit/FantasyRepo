@@ -51,29 +51,30 @@ namespace FantasyNBA.ApiClients
             return headers;
         }
 
+        /// <summary>
+        ///  Talk to the external API and parse response into List of Players
+        /// </summary>
+        /// <returns></returns>
         public async Task<List<Player>> FetchPlayersDataAsync()
         {
-            // Get NBA_API team IDs
-            var teams = await _dbProvider.GetAllTeamsAsync();
+            var teams = await _dbProvider.GetTeamsAsync();
 
             var idTasks = teams.Select(t =>
                 ParserUtils.ExtractApiIdAsync(t.ExternalApiDataJson, DataSourceApi.NbaApi, _logger));
 
             var idResults = await Task.WhenAll(idTasks); 
 
-            var teamIds = idResults.Where(id => id.HasValue && id == 1)
-                .Select(id => id.Value).ToList();
-
             int currentSeason = DateTime.UtcNow.Year - 1;
             var seasons = Enumerable.Range(currentSeason - _syncSettings.ActiveSeasonsBack + 1, _syncSettings.ActiveSeasonsBack);
-
             var headers = ConstructApiHeaders();
+            var teamIds = idResults.Where(id => id.HasValue && (id == 8 || id == 11))
+                .Select(id => id.Value).ToList();
 
             // Fetch players data for each team and season
             var players = await _fetcher.FetchMultipleTeamSeasonPagesAsync(teamIds, seasons, (teamId, season) => $"{_settings.BaseUrl}players?team={teamId}&season={season}",
                 apiKey: "",  getNextCursor: _parser.GetNextCursor, headers: headers, parsePage: _parser.ParsePlayersResponse );
-
-            return players;
+            var kley = players.Where(p => p.FirstName.ToLower() == "klay").ToList();
+            return kley;
         }
 
         public async Task<List<Team>> FetchTeamsDataAsync()

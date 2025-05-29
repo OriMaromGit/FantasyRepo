@@ -49,7 +49,7 @@ public class BallDontLiePlayerParser : IApiParser
                 DraftYear = (int?)item?.draft_year,
                 DraftRound = (int?)item?.draft_round,
                 DraftNumber = (int?)item?.draft_number,
-                Team = team,
+                ActiveTeam = team,
                 ExternalApiDataJson = JsonConvert.SerializeObject(externalIds)
             };
         }

@@ -111,7 +111,7 @@ namespace FantasyNBA.Utils
         /// Builds a lookup dictionary for fast access to DB teams by external API id.
         /// Structure: [DataSourceApi] → [external team id] → Team
         /// </summary>
-        public static Dictionary<DataSourceApi, Dictionary<int, Team>> BuildTeamLookup(List<Team> teams)
+        public static Dictionary<DataSourceApi, Dictionary<int, Team>> BuildDataSourceToTeamIdLookup(List<Team> teams)
         {
             var teamLookup = new Dictionary<DataSourceApi, Dictionary<int, Team>>();
 

@@ -25,7 +25,7 @@
             UpdateIfDifferent(p => p.Weight, (p, v) => p.Weight = v);
             UpdateIfDifferent(p => p.College, (p, v) => p.College = v);
             UpdateIfDifferent(p => p.Country, (p, v) => p.Country = v);
-            UpdateIfDifferent(p => p.TeamId, (p, v) => p.TeamId = v);
+            UpdateIfDifferent(p => p.CurrentTeamId, (p, v) => p.CurrentTeamId = v);
             UpdateIfDifferent(p => p.IsActive, (p, v) => p.IsActive = v);
             UpdateIfDifferent(p => p.NbaStartYear, (p, v) => p.NbaStartYear = v);
             UpdateIfDifferent(p => p.JerseyNumber, (p, v) => p.JerseyNumber = v);

@@ -88,6 +88,7 @@ namespace FantasyNBA.Services
 
             var teamSeasonPairs = from season in seasons
                                   from teamId in teamIds
+                                  orderby season descending
                                   select (teamId, season);
 
             foreach (var (teamId, season) in teamSeasonPairs)

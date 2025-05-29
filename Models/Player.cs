@@ -14,6 +14,7 @@ namespace FantasyNBA.Models
         
         public string FirstName { get; set; }
         public string LastName { get; set; }
+        public int Season { get; set; }
 
         public string Position { get; set; }
 
@@ -32,8 +33,10 @@ namespace FantasyNBA.Models
         public bool IsActive { get; set; }             // Needed to store active status from RapidAPI
 
         // Foreign key and navigation
-        public int TeamId { get; set; }
-        public Team Team { get; set; }
+        public int? CurrentTeamId { get; set; }
+
+        [ForeignKey(nameof(CurrentTeamId))]
+        public Team ActiveTeam { get; set; }
 
         // Historical stats (optional)
         public ICollection<GameStat> GameStats { get; set; }
@@ -41,5 +44,7 @@ namespace FantasyNBA.Models
         // Optional: Computed or external data
         [NotMapped]
         public double AveragePoints { get; set; }
+
+        public ICollection<PlayerTeamHistory> TeamHistory { get; set; } = new List<PlayerTeamHistory>();
     }
 }

@@ -83,8 +83,9 @@ namespace FantasyNBA.Parsers
                         DraftYear = null,
                         DraftRound = null,
                         DraftNumber = null,
-                        TeamId = teamId,
+                        CurrentTeamId = teamId,
                         IsActive = true,
+                        Season = season,
                         NbaStartYear = (int?)item.nba?.start,
                         DataSourceApi = DataSourceApi.NbaApi,
                         ExternalApiDataJson = JsonConvert.SerializeObject(new Dictionary<string, object>

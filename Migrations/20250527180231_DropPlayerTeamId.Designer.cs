@@ -4,6 +4,7 @@ using FantasyNBA.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FantasyNBA.Migrations
 {
     [DbContext(typeof(FantasyDbContext))]
-    partial class FantasyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250527180231_DropPlayerTeamId")]
+    partial class DropPlayerTeamId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -142,12 +145,17 @@ namespace FantasyNBA.Migrations
                     b.Property<int>("Season")
                         .HasColumnType("int");
 
+                    b.Property<int?>("TeamId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("Weight")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CurrentTeamId");
+
+                    b.HasIndex("TeamId");
 
                     b.HasIndex("ExternalApiDataJson", "Season", "DataSourceApi")
                         .IsUnique()
@@ -249,6 +257,10 @@ namespace FantasyNBA.Migrations
                         .WithMany()
                         .HasForeignKey("CurrentTeamId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("FantasyNBA.Models.Team", null)
+                        .WithMany("Players")
+                        .HasForeignKey("TeamId");
 
                     b.Navigation("ActiveTeam");
                 });

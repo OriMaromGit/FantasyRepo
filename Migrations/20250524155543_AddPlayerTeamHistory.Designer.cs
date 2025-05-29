@@ -4,6 +4,7 @@ using FantasyNBA.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FantasyNBA.Migrations
 {
     [DbContext(typeof(FantasyDbContext))]
-    partial class FantasyDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250524155543_AddPlayerTeamHistory")]
+    partial class AddPlayerTeamHistory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,7 +114,7 @@ namespace FantasyNBA.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("ExternalApiDataJson")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -139,7 +142,7 @@ namespace FantasyNBA.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Season")
+                    b.Property<int?>("TeamId")
                         .HasColumnType("int");
 
                     b.Property<int?>("Weight")
@@ -149,10 +152,7 @@ namespace FantasyNBA.Migrations
 
                     b.HasIndex("CurrentTeamId");
 
-                    b.HasIndex("ExternalApiDataJson", "Season", "DataSourceApi")
-                        .IsUnique()
-                        .HasDatabaseName("IX_Player_UniquePerSourceSeason")
-                        .HasFilter("[ExternalApiDataJson] IS NOT NULL");
+                    b.HasIndex("TeamId");
 
                     b.ToTable("Players");
                 });
@@ -164,9 +164,6 @@ namespace FantasyNBA.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("AcquiredAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -249,6 +246,10 @@ namespace FantasyNBA.Migrations
                         .WithMany()
                         .HasForeignKey("CurrentTeamId")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("FantasyNBA.Models.Team", null)
+                        .WithMany("Players")
+                        .HasForeignKey("TeamId");
 
                     b.Navigation("ActiveTeam");
                 });

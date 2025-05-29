@@ -21,10 +21,6 @@ namespace FantasyNBA.Models
         public string Abbreviation { get; set; }
         public string? LogoUrl { get; set; } // URL to team logo
         public string? Nickname { get; set; } // Optional: "Celtics", "Lakers", etc.
-
-
-        // Navigation property to players
-        public ICollection<Player> Players { get; set; }
     
         public static (List<Team> newTeams, List<Team> updatedTeams) GetTeamsToSync(List<Team> incomingTeams, Dictionary<string, Team> existingTeamsByAbbreviation)
         {
