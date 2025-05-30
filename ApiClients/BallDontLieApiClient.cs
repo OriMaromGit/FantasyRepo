@@ -139,7 +139,7 @@ namespace FantasyNBA.ApiClients
             return allPlayers;
         }
 
-        public async Task<List<Team>> FetchTeamsDataAsync()
+        public async Task<List<Team>> GetTeamsAsync()
         {
             var endpoint = _settings.BaseUrl.TrimEnd('/') + "/teams";
 
@@ -153,6 +153,11 @@ namespace FantasyNBA.ApiClients
             }
 
             return allTeams;
+        }
+
+        public Task<SyncResult<Player>> GetPlayersAsync(Dictionary<DataSourceApi, Dictionary<int, Team>> teamLookup, bool filterByIdOnly)
+        {
+            throw new NotImplementedException();
         }
     }
 }

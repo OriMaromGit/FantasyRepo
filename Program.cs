@@ -62,9 +62,10 @@ builder.Services.AddScoped<INbaApiClient, NbaApiClient>(sp =>
     var settings = sp.GetRequiredService<IOptionsMonitor<ApiProviderSettings>>().Get("NBA_API");
     var dbProvider = sp.GetRequiredService<IDbProvider>();
     var syncSettings = sp.GetRequiredService<IOptionsMonitor<SyncSettings>>().Get("SyncSettings");
-    var logger = sp.GetRequiredService<IGenericLogger>();
+    var genericLogger = sp.GetRequiredService<IGenericLogger>();
+    var logger = sp.GetRequiredService<ILogger<INbaApiClient>>();
 
-    return new NbaApiClient(fetcher, dbProvider, parser, Options.Create(settings), settings.PageSize, Options.Create(syncSettings), logger);
+    return new NbaApiClient(fetcher, dbProvider, parser, Options.Create(settings), settings.PageSize, Options.Create(syncSettings), genericLogger, logger);
 });
 
 builder.Services.AddScoped<SyncService>();

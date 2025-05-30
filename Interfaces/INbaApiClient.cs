@@ -1,13 +1,12 @@
 ﻿using FantasyNBA.Enums;
 using FantasyNBA.Models;
-using System.Threading.Tasks;
 
 namespace FantasyNBA.Interfaces
 {
     public interface INbaApiClient
     {
         DataSourceApi DataSourceApi { get; }
-        Task<List<Player>> FetchPlayersDataAsync();
-        Task<List<Team>> FetchTeamsDataAsync();
+        Task<SyncResult<Player>> GetPlayersAsync( Dictionary<DataSourceApi, Dictionary<int, Team>> teamLookup,bool filterByIdOnly); 
+        Task<List<Team>> GetTeamsAsync();
     }
 }
