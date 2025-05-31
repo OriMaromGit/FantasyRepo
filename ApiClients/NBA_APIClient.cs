@@ -61,8 +61,7 @@ namespace FantasyNBA.ApiClients
                 return new();
             }
 
-            var teamIds = teamMap.Where(kvp => kvp.Key == 1 || kvp.Key == 23)
-                .Select(kvp => kvp.Key).ToList();
+            var teamIds = teamMap.Select(kvp => kvp.Key).ToList();
 
             var players = await _fetcher.FetchMultipleTeamSeasonPagesAsync(teamIds, seasons, (teamId, season) => $"{_settings.BaseUrl}players?team={teamId}&season={season}", apiKey: string.Empty,
                 getNextCursor: _parser.GetNextCursor, headers: headers, parsePage: _parser.ParsePlayersResponse);

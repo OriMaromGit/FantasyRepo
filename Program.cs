@@ -7,7 +7,6 @@ using FantasyNBA.Parsers;
 using FantasyNBA.Services;
 using FantasyNBA.Utils;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
